@@ -12,7 +12,7 @@ P1_2 = 1;
 //global variables 
 int TH0BIT; 					//TxOBITs used to set frequency of square wave. Calculation for 10,000HZ wave  
 int TL0BIT;			  		//(.0001s period) 65535-(24000000/12/10000)=65335(dec)->FF37(hex) TH0=FF TL0=37
-int continouscounter = 0;			/*counts number of times that timer 1 resets without resetting to know the overall time 
+int continuouscounter = 0;			/*counts number of times that timer 1 resets without resetting to know the overall time 
 	                     				lickwindow, etc. and resets to zero each time the program switches between these phases
 					                  	passes in the duration of the program*/
 int timer1flag;               //set to 1 everytime timer1 overflows
@@ -27,14 +27,14 @@ void timer1(void) interrupt 3 {   /* timer 1 interrupt used to count how much ti
 	TL1=0x0B;                       // initial values loaded to timer 50HZ (.02s period) 
 	TH1=0x63;                       // 65355-(24,000,000/12/50)=25355 25355(dec)->630B(hex) TH1=63 TL1=0B
 	timer1flag = 1;
-	continouscounter++;
+	continuouscounter++;
 }	
 
 int printf(const char *format, ... );
 int rand(void);  									//random number generator
 void srand(unsigned int seed);    //sets a seed to rng
 
-void dripfunction(int targets, int corrects, int trainings, int durationvalves){
+void dripfunction(int  targets, int corrects, int trainings, int durationvalves, int timecounter){
 	int driptimer1counter = 0;
 	int time;
 	int rightlick;
@@ -50,8 +50,8 @@ void dripfunction(int targets, int corrects, int trainings, int durationvalves){
 	while (corrects == 1 || trainings == 1){
 		rightlick = P1_1;
 		leftlick = P1_2;
-		time = (.02*continouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
-		printf("%n",time,leftlick,rightlick);
+		time = (.02*timecounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
+		printf("\n%n,%n,%n",time,leftlick,rightlick);
 		if (timer1flag == 1){
 			driptimer1counter++;
 			timer1flag = 0;
@@ -103,7 +103,7 @@ main(){
 	int correct;				        //correct=1 indicates mouse licked correctly; correct = 0 incorrect lick; correct = 2 indicates no lick
   int target = 0;				      //if target = 0, target sequence plays. if target = 1, nontarget sequence plays
 	int time = 0;
-  int xdata block_sequence[50];
+  int xdata block_sequence[300];
   const char xdata toneslist[8] = {'a','b','c','d','e','f','g','\0'};		//array used to randomly generate sequences
 	for (j = 0 ; j <= trial_number ; j++){							
 		for (k = 0 ; k <= 3 ; k++){		//this loop generates nontarget sequence in the second column of sequence
@@ -139,8 +139,8 @@ main(){
 		while(tones == 1){
 			leftlick = P1_2;											    	//read the input lick pins
 			rightlick = P1_1;
-			time = (.02*continouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
-      printf("%n",time,leftlick,rightlick);
+			time = (.02*continuouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
+      printf("\n%n,%n,%n",time,leftlick,rightlick);
 			if (timer1counter == 0){
 				TR0 = 1;
 			}
@@ -148,57 +148,41 @@ main(){
 				timer1counter++;		  						        //start/stop playing, change, or move onto lickwindow
 				timer1flag = 0;
 			  if (timer1counter == (k+1)*duration_tones){
-			    TR0 = 1; 	                              //toggle timer 0 which toggles tone
+			    TR0 = 0; 	                              //toggle timer 0 which toggles tone
 				}
 				else if (timer1counter == (k+1)*duration_tones_and_space){
-						k++;
-						if (sequence[j][1][k] == 'a'){
-							TH0BIT = 0xFE;
-							TL0BIT = 0xE3;
+			  	k++;
+					if (timer1counter == duration_sequence){
+					  tones = 0;
+					  lickwindow = 1;
+					  timer1counter = 0;
+					  TR0 = 1;
+				  }
+					else{
+						switch (sequence[j][1][k]) {
+							case 'a' : TH0BIT = 0xFE; TL0BIT = 0xE3; break;
+							case 'b' : TH0BIT = 0xFF;	TL0BIT = 0x02; break;
+							case 'c' : TH0BIT = 0xFF;	TL0BIT = 0x10; break;
+							case 'd' : TH0BIT = 0xFF; TL0BIT = 0x2A; break;
+							case 'e' : TH0BIT = 0xFF; TL0BIT = 0x41; break;
+							case 'f' : TH0BIT = 0xFF; TL0BIT = 0x4C; break;
+							case 'g' : TH0BIT = 0xFF; TL0BIT = 0x60; break;
 						}
-						else if (sequence[j][1][k] == 'b'){
-							TH0BIT = 0xFF;
-							TL0BIT = 0x02;
-						}
-						else if (sequence[j][1][k] == 'c'){
-							TH0BIT = 0xFF;
-							TL0BIT = 0x10;
-						}
-						else if (sequence[j][1][k] == 'd'){
-							TH0BIT = 0xFF;
-							TL0BIT = 0x2A;
-						}
-						else if (sequence[j][1][k] == 'e'){
-							TH0BIT = 0xFF;
-							TL0BIT = 0x41;
-						}
-						else if (sequence[j][1][k] == 'f'){
-							TH0BIT = 0xFF;
-							TL0BIT = 0x4C;
-						}
-						else if (sequence[j][1][k] == 'g'){
-							TH0BIT = 0xFF;
-							TL0BIT = 0x60;
-					}
-			  }
-        else if (timer1counter == duration_sequence){
-					tones = 0;
-					lickwindow = 1;
-					timer1counter = 0;
-					TR0 = 0;
-				}	
+					}					
+		    }
 		  }
-		}
+		}	
 		while (training == 1 && lickwindow == 1){
-			dripfunction(target, correct, training, duration_open_valve);
+			dripfunction(target, correct, training, duration_open_valve, continuouscounter);
 			leftlick = P1_2;
 			rightlick = P1_1;
-			time = (.02*continouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
-      printf("%n",time,leftlick,rightlick);
+			time = (.02*continuouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
+      printf("\n%n,%n,%n",time,leftlick,rightlick);
 			if (timer1flag == 1){
 				timer1counter++;
 				timer1flag = 0;
 				if (timer1counter == duration_lickwindow){
+					timer1counter = 0;
 					lickwindow = 0;
 					delay = 1;
 				}
@@ -207,8 +191,8 @@ main(){
 		while(training == 0 && lickwindow == 1){
       leftlick = P1_2;
 			rightlick = P1_1;
-			time = (.02*continouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
-      printf("%n",time,leftlick,rightlick);
+			time = (.02*continuouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
+      printf("\n%n,%n,%n",time,leftlick,rightlick);
 			if (leftlick == 1){
 				leftlickcounter = leftlickcounter++;			  
 				if (leftlickcounter >= 10){
@@ -219,7 +203,7 @@ main(){
 					if (target == 1){
 						delay = 0;
 						correct = 1;
-						dripfunction(target, correct, training, duration_open_valve);
+						dripfunction(target, correct, training, duration_open_valve, continuouscounter);
   				  target = rand()%2;
 					}
 					else{
@@ -241,7 +225,7 @@ main(){
 					if (target == 0){
 						delay = 0;
 						correct = 1;
-						dripfunction(target, correct, training, duration_open_valve);
+						dripfunction(target, correct, training, duration_open_valve, continuouscounter);
   				  target = rand()%2;
 					}
 					else{
@@ -258,6 +242,7 @@ main(){
 				timer1counter++;
 				timer1flag = 0;
 				if (timer1counter == duration_lickwindow){
+					timer1counter = 1;
 					lickwindow = 0;
 					delay = 1;
 				}
@@ -276,8 +261,8 @@ main(){
 						timer1counter = 0;
 					}
 				}
-				time = (.02*continouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
-	      printf("%n",time,leftlick,rightlick);
+				time = (.02*continuouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
+	      printf("\n%n,%n,%n",time,leftlick,rightlick);
 			}
 		}
 		else{
@@ -285,6 +270,6 @@ main(){
 			tones = 1;
 			timer1counter = 0;
 		}
+		printf("\n,,,%n,%n,%s",j,lick,sequence[trial_number][1]);
 	}
-  printf("%n,%n,%n,%n",j,lick,sequence[trial_number][1]);
 }
