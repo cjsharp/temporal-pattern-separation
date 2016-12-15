@@ -89,9 +89,9 @@ main(){
 	const int duration_tones_and_space = duration_tones + duration_time_between_tones;
 	int timer1counter;
 	int j; 					          	//j is the index used to indicate which sequence is being played
-	int tones = 1;		     			//tones = 1 means indicates that the tones are playing; tones = 0 means otherwise
-	int lickwindow = 0;	     		//lickwindow = 1 indicates that the lickwindow is on; lickwindow = 0 means otherwise
-	int delay = 0;					    //delay = 1 indictates that it is the delay time between lickwindow and next song
+	int phase = 0;    //phase = 0 means indicates that the tones are playing
+                    //phase = 1 indicates that the lickwindow is on
+                    //phase = 2 indictates that it is the delay time between lickwindow and next song
   int k;				        	    //k is the index used to indicate which tone is playing of the trial_numberth sequence
 	int lick;										//lick=1 indicates that the mouse licked left; lick=0 --> right
 	int leftlick = 0;			      //if leftlick = 1, mouse made contact with left lick port
@@ -136,7 +136,7 @@ main(){
 			sequence[j][0][3] = 'f';
 		}
 		k = 0;
-		while(tones == 1){
+		while(phase == 0){
 			leftlick = P1_2;											    	//read the input lick pins
 			rightlick = P1_1;
 			time = (.02*continuouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
@@ -153,8 +153,7 @@ main(){
 				else if (timer1counter == (k+1)*duration_tones_and_space){
 			  	k++;
 					if (timer1counter == duration_sequence){
-					  tones = 0;
-					  lickwindow = 1;
+					  phase = 1;
 					  timer1counter = 0;
 					  TR0 = 1;
 				  }
@@ -172,7 +171,7 @@ main(){
 		    }
 		  }
 		}	
-		while (training == 1 && lickwindow == 1){
+		while (training == 1 && phase == 1){
 			dripfunction(target, correct, training, duration_open_valve, continuouscounter);
 			leftlick = P1_2;
 			rightlick = P1_1;
@@ -183,12 +182,11 @@ main(){
 				timer1flag = 0;
 				if (timer1counter == duration_lickwindow){
 					timer1counter = 0;
-					lickwindow = 0;
-					delay = 1;
+					phase = 2;
 				}
 			}
 		}
-		while(training == 0 && lickwindow == 1){
+		while(training == 0 && phase == 1){
       leftlick = P1_2;
 			rightlick = P1_1;
 			time = (.02*continuouscounter) + (.0000005*(65355-(TH0<<2|TL0)+25335));
@@ -199,15 +197,14 @@ main(){
 					leftlickcounter = 0;
 					lick = 1;
 					timer1counter = 0;
-					lickwindow = 0;
 					if (target == 1){
-						delay = 0;
+						phase = 0;
 						correct = 1;
 						dripfunction(target, correct, training, duration_open_valve, continuouscounter);
   				  target = rand()%2;
 					}
 					else{
-						delay = 1;
+						phase = 2;
 						correct = 0;
 					}
 					timer1counter = 0;
@@ -221,15 +218,14 @@ main(){
 				if (rightlickcounter >= 10){
 					rightlickcounter = 0;
 					lick = 2;
-					lickwindow = 0;
 					if (target == 0){
-						delay = 0;
+						phase = 0;
 						correct = 1;
 						dripfunction(target, correct, training, duration_open_valve, continuouscounter);
   				  target = rand()%2;
 					}
 					else{
-						delay = 1;
+						phase = 2;
 						correct = 0;
 					}
 		      timer1counter = 0;
@@ -243,21 +239,19 @@ main(){
 				timer1flag = 0;
 				if (timer1counter == duration_lickwindow){
 					timer1counter = 1;
-					lickwindow = 0;
-					delay = 1;
+					phase = 2;
 				}
 			}
 		}
 		if (delay_onoff == 1){
-			while (delay == 1){
+			while (phase == 2){
         leftlick = P1_2;
 				rightlick = P1_1;
 				if (timer1flag == 1){
 					timer1counter++;
 					timer1flag = 0;
 					if (timer1counter == duration_delay){
-						delay = 0;
-						tones = 1;
+						phase = 0;
 						timer1counter = 0;
 					}
 				}
@@ -266,8 +260,7 @@ main(){
 			}
 		}
 		else{
-			delay = 0;
-			tones = 1;
+			phase = 0;
 			timer1counter = 0;
 		}
 		printf("\n,,,%n,%n,%s",j,lick,sequence[trial_number][1]);
