@@ -96,9 +96,11 @@ main(){
 	int lick;										//lick=1 indicates that the mouse licked left; lick=0 --> right
 	int leftlick = 0;			      //if leftlick = 1, mouse made contact with left lick port
 	int rightlick = 0;			    //if leftlick = 1, mouse made contact with right lick port
+	int leftlastlick = 0;			  //keeps track if left side was licked in the last data sampling
+	int rightlastlick = 0;	    //keeps track if right side was licked in the last data sampling
 	int leftlickcounter = 0;		//counts the number of consecutive times in which the left lick ports reads HIGH
 	int rightlickcounter = 0;		//counts the number of consecutive times in which the right lick ports reads HIGH
-	int correct;				        //correct=1 indicates mouse licked correctly; correct = 0 incorrect lick; correct = 2 indicates no lick
+	int correct;				        //correct=1 indicates mouse licked correctly; correct = 0 incorrect lick; correct = -1 indicates no lick
   int target = 0;				      //if target = 0, target sequence plays. if target = 1, nontarget sequence plays
 	int time = 0;
   int xdata block_sequence[300];
@@ -236,6 +238,7 @@ main(){
 				timer1counter++;
 				timer1flag = 0;
 				if (timer1counter == duration_lickwindow){
+					correct = -1;
 					timer1counter = 1;
 					phase = 2;
 				}
@@ -261,6 +264,6 @@ main(){
 			phase = 0;
 			timer1counter = 0;
 		}
-		printf("\n,,,%n,%n,%s",j,lick,sequence[trial_number][1]);
+		printf("\n,,,%n,%n,%s",j,correct,sequence[trial_number][1]);
 	}
 }
