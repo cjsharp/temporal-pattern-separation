@@ -59,16 +59,18 @@ void timer0(void) interrupt 1 {   	//global timekeeper
 }
 
 void exint0() interrupt 0 {     //left lick (location at 0003H)
+	if (phase == 1){phase = 2;}
 	if (realtimelick == 3){realtimelick=4;}
 	else if (realtimelick == 5) {realtimelick=6;}}
 
 void exint1() interrupt 2 {    	//right lick (location at 0013H)
+	if (phase == 1){phase = 2;}
 	if (realtimelick == 3){realtimelick=5;}
 	else if (realtimelick == 4){realtimelick=6;}}
 
 void Uart_Isr() interrupt 4 {
     if (RI){RI = 0; P0 = SBUF;}    	//Clear receive interrupt flag; P0 show UART data
-    if (TI){TI = 0; busy = 0;}}    	//Clear transmit interrupt flag; Clear transmit busy flag\                   
+    if (TI){TI = 0; busy = 0;}}    	//Clear transmit interrupt flag; Clear transmit busy flag                  
 
 void dripfunction(unsigned int whatmouseshouldlickz){
 	int initialtime = 200000*continuouscounter+5*(((unsigned int)TH0<<8|(unsigned int)TL0)-25355);
@@ -115,10 +117,11 @@ void main(){
 	TL0=0x0B;                       //initial values loaded to timer 50HZ (.02s period) 
 	TH0=0x63;                       //65355-(24,000,000/12/50)=25355 25355(dec)->630B(hex) TH1=63 TL1=0B
 	TCON= 0x50;						//start timers 0 and 1
-	IT1 = 1;                        //set INT1 int type (1:Falling only 0:Low level)
+	IT1 = 1;                        //set INT1 int type (1:Falling only 0:Low level)   not sure if these lines are necessary
     EX1 = 1;                        //enable INT1 interrupt	
 	IT0 = 1;                        //set INT0 int type (1:Falling 0:Low level)
-    EX0 = 1;                        //enable INT0 interrupt			
+    EX0 = 1;                        //enable INT0 interrupt
+	WAKE_CLKO = 0;			
 	for (j = 0 ; j <= trial_number ; j++){						
 		for (k = 0 ; k <= 3 ; k++){ //this loop generates nontarget sequence in the second column of sequence
 			unsigned int randindex = rand() % 7;
