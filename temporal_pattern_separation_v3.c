@@ -81,13 +81,8 @@ void dripfunction(unsigned int whatmouseshouldlickz){
 	else if  (whatmouseshouldlickz == 18){
 		rightvalve = 1;
 	}
-	while (finaltime-initialtime <= duration_open_valve){
-		if (continuouscounter<5){
-			printf("%u.0%lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
-		}
-		else{
-			printf("%u.%lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
-		}
+	while (finaltime-initialtime <= duration_open_valve){ 
+		printf("%u.%07lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
 		realtimelick = 3;
 		rightvalve = 0;
 		leftvalve = 0;
@@ -150,7 +145,7 @@ void main(){
 		whatmouseshouldlick = (unsigned int)target*2+14;
 		k = 0;
 		phasecounter = 0;			
-		while(phase == 0){
+		while(phase == 0){		  															//song loop
 			if (phasecounter == k*duration_tones_and_space){
 				switch (sequence[j][k]) {
 					case 'a': BRT = a; break; case 'b': BRT = b; break; case 'c': BRT = c; break;
@@ -167,36 +162,21 @@ void main(){
 				phase = 1;
     			WAKE_CLKO = 0;
 			}
-			if (continuouscounter<5){
-				printf("%u.0%lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
-			}
-			else{
-				printf("%u.%lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
-			}
+			printf("%u.%07lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
 			realtimelick = 3;
 		}
         phasecounter = 0;
-		while (training == 1 && phase == 1){ //training lickwindow
+		while (training == 1 && phase == 1){ 										//training lickwindow loop
 			dripfunction(whatmouseshouldlick);
-        	if (continuouscounter<5){
-				printf("%u.0%lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
-			}
-			else{
-				printf("%u.%lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
-			}
+        	printf("%u.%07lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
 			realtimelick = 3;
 			if (phasecounter == duration_lickwindow){
 				phase = 2;
 			}
 		}
 		phasecounter = 0;
-		while(training == 0 && phase == 1){	  //regular lickwindow
-			if (continuouscounter<5){
-				printf("%u.0%lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
-			}
-			else{
-				printf("%u.%lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
-			}
+		while(training == 0 && phase == 1){	  										//regular lickwindow loop
+			printf("%u.%07lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
 			switch (realtimelick) {
 				case 5: whatmouselicks = 18; break;
 				case 4: whatmouselicks = 16; break;
@@ -219,16 +199,11 @@ void main(){
 		}
 		phasecounter=0;
 		if ((int)delay_onoff){
-			while (phase == 2){
+			while (phase == 2){					  								//delay loop
 				if (phasecounter == duration_delay){
 					phase = 0;
 				}
-				if (continuouscounter<5){
-					printf("%u.0%lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
-				}
-				else{
-					printf("%u.%lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
-				}
+				printf("%u.%07lu,%u,%u\n",seconds,200000*continuouscounter+5*(long unsigned int)(((unsigned int)TH0<<8|(unsigned int)TL0)-25355),phase,realtimelick);
 			realtimelick = 3;		
 		  	}
 		}
