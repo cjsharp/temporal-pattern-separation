@@ -1,0 +1,179 @@
+
+##colors?
+##open windows side by side?
+
+#import necessary packages
+import pdb
+import serial
+import csv
+from drawnow import *
+import vispy
+import matplotlib.pyplot as plt
+import numpy as np
+import PyQt5
+import pyqtgraph as pg
+import sys
+from pyqtgraph.Qt import QtGui, QtCore
+
+##assign arrays
+xdata= [0,1]
+sequence= []
+difficultyforthissong= []
+tonedifficulty= [None]*4
+csvSerialData= []
+whatmouselicks= [0]
+whatmouseshouldlick= []
+sequencedifficulty= [0]
+time= []
+lick= []
+phase= []
+ysequencedict={0:0, 2:2, 4:4, 6:6, 8:8, 10:10, 12: 'Sequence Difficulty', 14:'no lick', 16:'left lick', 18:'right lick', 20:'both lick'}
+yrealtimedict={0:'song', 1:'lick period', 2:'delay', 3:'no lick', 4:'left lick', 5:'right lick', 6:'both lick'}
+
+##Scrolling plots
+win1 = pg.GraphicsWindow()
+win1.setWindowTitle('Scrolling Plots')
+stringaxis1 = pg.AxisItem(orientation='left')
+stringaxis1.setTicks([ysequencedict.items()])
+p1 = win1.addPlot(axisItems={'left': stringaxis1})
+curve1_1 = p1.plot()
+curve1_2 = p1.plot()
+p1.showAxis('left', show=True)
+p1.showGrid(x=True, y=True, alpha = .5)
+
+win1.nextRow()
+stringaxis2 = pg.AxisItem(orientation='left')
+stringaxis2.setTicks([yrealtimedict.items()])
+p2=win1.addPlot(axisItems={'left': stringaxis2})
+curve2_1 = p2.plot()
+curve2_2 = p2.plot()
+p2.showGrid(x=True, y=True, alpha = .5)
+
+##Interactive plots
+win2 = pg.GraphicsWindow()
+win2.setWindowTitle('Interactive Plots')
+p3 = win2.addPlot(axisItems={'left': stringaxis1})
+curve3_1 = p3.plot()
+curve3_2 = p3.plot()
+p3.showGrid(x=True, y=True, alpha = .5)
+
+win2.nextRow()
+stringaxis2 = pg.AxisItem(orientation='left')
+stringaxis2.setTicks([yrealtimedict.items()])
+p4 = win2.addPlot(axisItems={'left': stringaxis2})
+curve4_1 = p4.plot()
+curve4_2 = p4.plot()
+p4.showGrid(x=True, y=True, alpha = .5)
+
+endflag=0
+ptr1 = -20
+
+def update():
+#scrolling window
+    #scrolling sequence graph
+    curve1_1.setData(xdata,whatmouselicks,stepMode=True)
+    curve1_2.setData(xdata,sequencedifficulty,stepMode=True)
+    if ptr1 > 0:
+         p1.setXRange(ptr1,ptr1+20,update = False)
+    else:
+         p1.setXRange(0, 20, update = False)
+    #scrolling realtime graph
+    curve2_1.setData(time,lick)
+    curve2_2.setData(time,phase)
+    if time:
+        if time[-1] > 1500000:
+             p2.setXRange(time[-1]-1500000,time[-1],update = False)
+        else:
+             p2.setXRange(0, 1500000, update = False)
+#interactive window
+    #interactive sequence graph
+    curve3_1.setData(xdata,whatmouselicks,stepMode=True)
+    curve3_2.setData(xdata,sequencedifficulty,stepMode=True)
+    #interactive realtime graph
+    curve4_1.setData(time, lick)
+    curve4_2.setData(time, phase)
+    
+timer = pg.QtCore.QTimer()
+timer.timeout.connect(update)
+timer.start(0)
+
+filename = input('Filename (i.e. "filename.csv"):')
+while filename[-4:] != '.csv':
+    print('Woops, wrong name format. ')
+    filename = input('Filename (i.e. "filename.csv"):')
+##pdb.set_trace()
+try:
+    with serial.Serial('COM6', 9600, parity=serial.PARITY_ODD, stopbits=serial.STOPBITS_TWO, bytesize=serial.SEVENBITS) as SerialData:
+        while 1:
+            while (SerialData.inWaiting()==0): #Wait here until there is data
+                pass #do nothing
+            data = SerialData.readline().decode("utf-8").rstrip('\r\n')
+            if (not data):
+                pass
+            elif (data[0] == 'e') & (endflag == 1):
+                break
+            elif data[0].isnumeric() or data[0]==' ':
+                print(data)
+            dataArray = data.split(',')
+            if ((len(dataArray) == 3) & (dataArray[0].isnumeric())):
+                data = data + '\n'
+                endflag = 1
+                time.append(int(dataArray[0]))
+                lick.append(int(dataArray[1]))
+                phase.append(int(dataArray[2]))
+            elif (len(dataArray) == 7):
+                sequence = str(dataArray[6])
+                for index, tone in enumerate(sequence):
+                    index = int(index)
+                    if index < 3 :
+                        if (tone == 'a'):
+                            tonedifficulty[index] = abs(-1.5-index)
+                        elif (tone == 'b'):
+                            tonedifficulty[index] = abs(-.5-index)
+                        elif (tone == 'c'):
+                            tonedifficulty[index] = abs(0-index)
+                        elif (tone == 'd'):
+                            tonedifficulty[index] = abs(1-index)
+                        elif (tone == 'e'):
+                            tonedifficulty[index] = 2-index
+                        elif (tone == 'f'):
+                            tonedifficulty[index] = 2.5-index
+                        elif (tone == 'g'):
+                            tonedifficulty[index] = 3.5-index
+                    else:
+                        if (tone == 'a'):
+                            tonedifficulty[index] = 4
+                        elif (tone == 'b'):
+                            tonedifficulty[index] = 3
+                        elif (tone == 'c'):
+                            tonedifficulty[index] = 2.5
+                        elif (tone == 'd'):
+                            tonedifficulty[index] = 1.5
+                        elif (tone == 'e'):
+                            tonedifficulty[index] = .5
+                        elif (tone == 'f'):
+                            tonedifficulty[index] = 0
+                        elif (tone == 'g'):
+                            tonedifficulty[index] = 1
+                difficultyforthissong = tonedifficulty[0]+tonedifficulty[1]+tonedifficulty[2]+tonedifficulty[3]
+                data = data + ',' + str(difficultyforthissong) + '\n'
+                whatmouselicks.append(int(dataArray[4]))
+                sequencedifficulty.append(difficultyforthissong)
+                whatmouseshouldlick.append(int(dataArray[5]))
+                xdata = np.arange(1,len(whatmouselicks)+2)
+                ptr1 += 1
+            QtGui.QApplication.processEvents()
+            csvSerialData.append(data)
+finally:
+    with open(filename,'w') as csvfile :
+        wr = csv.writer(csvfile,dialect='excel',delimiter =' ',quotechar ='"',quoting=csv.QUOTE_NONE,escapechar=' ',lineterminator='\n',skipinitialspace=True,doublequote=False)
+        wr.writerows([csvSerialData])
+    print('\ncsv written')
+    sys.exit()
+
+##QtGui.QApplication.instance().exec_()
+
+with open(filename,'w') as csvfile :
+    wr = csv.writer(csvfile,dialect='excel',delimiter =' ',quotechar ='"',quoting=csv.QUOTE_NONE,escapechar=' ',lineterminator='\n',skipinitialspace=True,doublequote=False)
+    wr.writerows([csvSerialData])
+    print('csv written')
