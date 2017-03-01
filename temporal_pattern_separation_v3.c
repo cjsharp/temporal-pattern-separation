@@ -6,9 +6,8 @@
 #define  tone_duration  (unsigned int)((.2)/.01)          	//set duration of tones in seconds in the parenthesises
 #define  time_between_tones  (unsigned int)((.3)/.01)		//set duration of time between tones in the parenthesises
 #define  lickwindow_duration  (2)/.01        				//set duration of lickwindow in seconds in the parenthesises
-#define  valve_open_time  (.4)/.01							//set duration of open reward valve in seconds
-#define  right_valve_open_time  (.4)/.01							//set duration of open reward valve in seconds
-#define  left_valve_open_time  (.4)/.01							//set duration of open reward valve in seconds
+#define  right_valve_open_time  (.1)/.01					//set duration of open reward valve in seconds
+#define  left_valve_open_time  (.9)/.01						//set duration of open reward valve in seconds
 #define  trial_number  200       							//sets number of trials
 #define  min_difficulty 4
 #define  max_difficulty 20
@@ -32,6 +31,7 @@ bit target;					//target bit used to tell if song is target=1/nontarget=0
 bit tonechange=0;			//when tone is changed in timer0, tonechange goes HIGH so that main function knows to switch BRT/tone frequency
 bit lickflag=0;
 bit info_received_flag=0;
+bit pause=0;
 unsigned int beginreward;
 unsigned char k=0;				//index used for tones			    
 unsigned char correct;			//correct=2 => mouse licked correctly;    correct=1 => incorrect;    correct=0 => no lick
@@ -67,15 +67,19 @@ void timer0(void) interrupt 1 {
 			if (correct==2){phase=2;}						//go to reward phase if correct				
 			else if (correct==1){phase=3;}}}				//if not, go to delay phase  
 	if (phase == 2){
-		if (training_phase == 1){				
+		if (training_phase == 1){		
 			if (phasecounter == drip_delay_time){  		
 				if (target){rightlight=0; rightvalve=1;} else {leftlight=0; leftvalve=1;}}				//reward mouse from left or right lead  
-			else if (phasecounter == drip_delay_time+valve_open_time){	
-				rightlight=1; rightvalve=0; leftlight=1; leftvalve=0; phase=3; phasecounter=0;}}		//change phase, reset phasecounter, reset dripflag
+			else if (phasecounter == drip_delay_time+right_valve_open_time && target ==1){	
+				rightlight=1; rightvalve=0; phase=3; phasecounter=0;}
+			else if (phasecounter == drip_delay_time+left_valve_open_time && target ==0){	
+				leftlight=1; leftvalve=0; phase=3; phasecounter=0;}}		//change phase, reset phasecounter, reset dripflag
 		else { 		
-			if (target){rightlight=0;} else {leftlight=0;}				//reward mouse from left or right lead  
-			if (phasecounter == valve_open_time){	
-				rightlight=1; leftlight=1; phase=3; phasecounter=0;}}}		//change phase, reset phasecounter, reset dripflag
+			if (target){rightlight=0;rightvalve=1;} else {leftlight=0; leftvalve=1;}				//reward mouse from left or right lead  
+			if (phasecounter==right_valve_open_time && target==1){	
+				rightvalve=0; rightlight=1; phase=3; phasecounter=0;}
+			else if (phasecounter==left_valve_open_time && target==0){
+				leftvalve=0; leftlight=1; phase=3; phasecounter=0;}}}		//change phase, reset phasecounter, reset dripflag
 	if (phase == 3){			  //delay phase
 		if (correct==2 & phasecounter==delay_duration){phase=0; phasecounter=0;}
 		else if (phasecounter==punishment_duration+delay_duration){phase=0; phasecounter=0;}}		 //phasecounter resets every phase change}
@@ -107,7 +111,7 @@ void exint1() interrupt 2 {	   //right lick interrupt (location at 0013H)
 
 void Uart_Isr() interrupt 4 {
     if (RI){RI = 0; 
-////	if (SBUF == 0x55) {pauseplay==1} else {parameters[0] = SBUF; parameter_index=parameter_index+1;}  
+////	if (SBUF == 0x55) {pause~=pause} else {parameters[0] = SBUF; parameter_index=parameter_index+1;}  
 	}    	//Clear receive interrupt flag; P0 show UART data
     if (TI){TI = 0; busy = 0;}}    	//Clear transmit interrupt flag; Clear transmit busy flag 
 
@@ -134,7 +138,6 @@ void main(){
 	P3M1=0x00;
 	srand(7);//need random seed?
 	target = 0;
-//	P3=0;
 	rightvalve=0;
 	leftvalve=0;
 	while(1){
@@ -182,6 +185,7 @@ void main(){
 				songdifficulty = tonedifficulty[0]+tonedifficulty[1]+tonedifficulty[2]+tonedifficulty[3];
 				}while(songdifficulty <= min_difficulty && songdifficulty >= max_difficulty);}		
 			while(phase==3){}				//catches code until delay ends				
+//			{while(pause==1){}}
 			j++; SBUF=(unsigned char)j;		//marks jth song that the mouse listens																
 			while(phase==0){				//song starts here
 				if (tonechange){			//if timer0 adds 1 to the tone index, k, tonechange is set HIGH which indicates 
