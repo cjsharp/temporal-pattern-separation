@@ -74,25 +74,25 @@ void timer0(void) interrupt 1 {
 			if (driptimecounter==drip_delay_time){rightlight=0; rightvalve=1;}
 			else if (driptimecounter==right_valve_open_time+drip_delay_time){
 				rightdripflag=0; driptimecounter=0; rightlight=1; rightvalve=0;}}}
-	else{
-		if (leftdripflag==1){driptimecounter++; leftvalve=1; leftlight=0;
-			if (driptimecounter==left_valve_open_time){
-				dripinterrupt=0; leftdripflag=0; driptimecounter=0; leftlight=1; leftvalve=0;}}
-		if (rightdripflag==1){driptimecounter++; rightvalve=1; rightlight=0;
-			if (driptimecounter==right_valve_open_time){
-				dripinterrupt=0; rightdripflag=0; driptimecounter=0; rightlight=1; rightvalve=0;}}}
+//	else{
+//		if (leftdripflag==1){driptimecounter++; leftvalve=1; leftlight=0;
+//			if (driptimecounter==left_valve_open_time){
+//				dripinterrupt=0; leftdripflag=0; driptimecounter=0; leftlight=1; leftvalve=0;}}
+//		if (rightdripflag==1){driptimecounter++; rightvalve=1; rightlight=0;
+//			if (driptimecounter==right_valve_open_time){
+//				dripinterrupt=0; rightdripflag=0; driptimecounter=0; rightlight=1; rightvalve=0;}}}
 	if (phase==1 & phasecounter==lickwindow_duration){phasecounter=0; correct=0; phase=2; mouselicked=0;}				
 	if (phase==2){			  //delay phase
 		if (correct==2 & phasecounter==delay_duration){phase=0; phasecounter=0;}
 		else if (phasecounter==punishment_duration+delay_duration){phase=0; phasecounter=0;}}		 //phasecounter resets every phase change}
 	if (phase==0){
 		if (phasecounter == 1){tonechange=1; WAKE_CLKO=0x04;}
-		else if (phasecounter == tone_duration){k++; tonechange=1; WAKE_CLKO=0;}  
-		else if (phasecounter == tone_duration+time_between_tones){WAKE_CLKO=0x04;}
-	    else if (phasecounter == 2*tone_duration+time_between_tones){k++; tonechange=1; WAKE_CLKO=0;}
-		else if (phasecounter == 2*tone_duration+2*time_between_tones){WAKE_CLKO=0x04;}
-	    else if (phasecounter == 3*tone_duration+2*time_between_tones){k++; tonechange=1; WAKE_CLKO=0;}
-	   	else if (phasecounter == 3*tone_duration+3*time_between_tones){WAKE_CLKO=0x04;}
+//		else if (phasecounter == tone_duration){k++; tonechange=1; WAKE_CLKO=0;}  
+//		else if (phasecounter == tone_duration+time_between_tones){WAKE_CLKO=0x04;}
+//	    else if (phasecounter == 2*tone_duration+time_between_tones){k++; tonechange=1; WAKE_CLKO=0;}
+//		else if (phasecounter == 2*tone_duration+2*time_between_tones){WAKE_CLKO=0x04;}
+//	    else if (phasecounter == 3*tone_duration+2*time_between_tones){k++; tonechange=1; WAKE_CLKO=0;}
+//	   	else if (phasecounter == 3*tone_duration+3*time_between_tones){WAKE_CLKO=0x04;}
 		else if (phasecounter == 4*tone_duration+3*time_between_tones-1){
 		senddata=1;}
 		else if (phasecounter == 4*tone_duration+3*time_between_tones){phasecounter=0; WAKE_CLKO=0; k=0; //turn off tone; reset tone index; reset phasecounter 
@@ -122,13 +122,15 @@ void Uart_Isr() interrupt 4 {
     if (TI){TI = 0; busy = 0;}}    	//Clear transmit interrupt flag; Clear transmit busy flag 
 
 void main(){
-	unsigned char tonedifficulty[4]={0,0,0,0};
+	unsigned char targetsequence[4]={0,4,2,6};		//8th octave: {0,1,2,3,4,5,6} --> {a,b,c,d,e,f,g}
+	unsigned char targetdifficulty[4]={0,0,0,0};
+	unsigned char tonedifficulty=0;
 	unsigned char songdifficulty=0;
 	unsigned char i=0;			//used to index tones when generating sequence
 	unsigned char sequence[4];
 	unsigned int j1=0; 			//j1 is the index used to indicate which sequence is being played 		
 	unsigned char j2=0;
-	unsigned char toneslist[7] = {0,1,2,3,4,5,6}; //array used to randomly generate sequences, 8th octave: {a,b,c,d,e,f,g}
+	unsigned char toneslist[7]={0,1,2,3,4,5,6}; //array used to randomly generate sequences, 8th octave: {a,b,c,d,e,f,g}
 	bit correctflag = 0;
 	SCON=0x5a;                //8 bit data, no parity bit
 	TMOD=0x21; 	            //8-bit auto reload timer 1 and 16 bit timer 0
@@ -146,6 +148,13 @@ void main(){
 	rightvalve=0;
 	leftvalve=0;
 	srand(7);//need random seed?
+	for (i=0;i<=3;i++){
+		sequence[i] = toneslist[rand()%7];
+		if (i<3){
+			switch(targetsequence[i]){
+				case 0: targetdifficulty[i]=0; break; case 1: targetdifficulty[i]=2; break;	case 2: targetdifficulty[i]=3; break; 	
+				case 3: targetdifficulty[i]=5; break; case 4: targetdifficulty[i]=7; break; case 5: targetdifficulty[i]=8; break;
+	      		case 6: targetdifficulty[i]=10; break;}}}
 	while(1){
 		EX1=0; EX0=0;                    //disable external interrupts
 //		while(1){
@@ -170,45 +179,35 @@ void main(){
 			if (training_phase==2 & correct==2){correctflag=1;}
 			if (correctflag==1 & j1%3==0){correctflag=0; target=!target;}
 			else if ((training_phase==3 & correct==2) || training_phase==4){target=rand()%2;}		//song composed in phase 3
-			if (target==1){sequence[0]=2; sequence[1]=3; sequence[2]=4; sequence[3]=5; songdifficulty=0;} 	
+			songdifficulty=0;
+			if (target==1){sequence[0]=targetsequence[0]; sequence[1]=targetsequence[1]; sequence[2]=targetsequence[2]; sequence[3]=targetsequence[3];} 	
 			else {											//if target==1, sequence = cdef. if not, random sequence
-				do{ for (i=0;i<=3;i++){
-						sequence[i] = toneslist[rand()%7];
-						if (i<3){
-			   				switch(sequence[i]){
-								case 0: tonedifficulty[i]=abs(-3-(2*i)); break; case 1:	tonedifficulty[i]=abs(-1-(2*i)); break;
-			        			case 2: tonedifficulty[i]=abs(0-(2*i)); break; 	case 3: tonedifficulty[i]=abs(2-(2*i)); break;
-			            		case 4:	tonedifficulty[i]=4-(2*i); break; 		case 5: tonedifficulty[i]=5-(2*i); break;
-			              		case 6: tonedifficulty[i]=7-(2*i); break;}}
-			  			else{
-							switch(sequence[i]){
-								case 0: tonedifficulty[i]=8; break; case 1:	tonedifficulty[i]=6; break;
-			             	 	case 2: tonedifficulty[i]=5; break;	case 3: tonedifficulty[i]=3; break;
-			            		case 4:	tonedifficulty[i]=1; break;	case 5: tonedifficulty[i]=0; break;
-			             	 	case 6: tonedifficulty[i]=1; break;}}}
-				songdifficulty=tonedifficulty[0]+tonedifficulty[1]+tonedifficulty[2]+tonedifficulty[3];
-				}while(songdifficulty <= min_difficulty && songdifficulty >= max_difficulty);}		
+				do{ for (i=0;i<3;i++){
+						sequence[i]=toneslist[rand()%7];
+						switch(sequence[i]){
+							case 0: tonedifficulty=0; break; case 1: tonedifficulty=2; break; case 2: tonedifficulty=3; break; 	
+							case 3: tonedifficulty=5; break; case 4: tonedifficulty=7; break; case 5: tonedifficulty=8; break;
+				      		case 6: tonedifficulty=10; break;}
+						songdifficulty=songdifficulty+abs(tonedifficulty-targetdifficulty[i]);}
+				}while(songdifficulty<=min_difficulty && songdifficulty>=max_difficulty);}		
 			while(phase==2){}				//catches code until delay ends				
 //			while(pause==1){}
-			if (j1==255 || j1==510 || j1==510){j2++;} j1++;  
-			EX1=0; EX0=0; 
-			while(TI==0){} TI=0; SBUF=0x71;   
+			if (j1==255 || j1==510){j2++;} j1++;  
+			EX1=0; EX0=0; while(TI==0){} TI=0; SBUF=0x71;   
 			while(TI==0){} TI=0; SBUF=(unsigned char)j2;
-			while(TI==0){} TI=0; SBUF=(unsigned char)j1; EX1=1; EX0=1;		//marks j1th song that the mouse listens																
+			while(TI==0){} TI=0; SBUF=(unsigned char)j1; EX1=1; EX0=1;																	
 			while(phase==0){				//song starts here
 				if (senddata==1){senddata=0; EX1=1; EX0=1;
 					while(TI==0){} TI=0; SBUF=0x72;
 					while(TI==0){} TI=0; SBUF=(sequence[0]<<4)|sequence[1];
 					while(TI==0){} TI=0; SBUF=(sequence[2]<<4)|sequence[3]; EX1=0; EX0=0;}				
-				if (tonechange){			//if timer0 adds 1 to the tone index, k, tonechange is set HIGH which indicates 
-					tonechange=0;			//that it needs to switch to next tone checks which tone is supposed to play						
+				if (tonechange){tonechange=0;					
 					switch (sequence[k]) {	//and sets BRT to the value such that it produces the appropriate frequency
 						case 0: BRT = a; break; case 1: BRT = b; break; case 2: BRT = c; break;
 						case 3: BRT = d; break; case 4: BRT = e; break; case 5: BRT = f; break;
 						case 6: BRT = g; break;}}}			//phase 1 starts by printing out tone sequence 
 			while(phase==1){}		//stops code until mouse licks or runs out of time
-			EX1=0; EX0=0;
-			while(TI==0){} TI=0; SBUF=0x74;
+			EX1=0; EX0=0; while(TI==0){} TI=0; SBUF=0x74;
 			while(TI==0){} TI=0; SBUF=(correct<<4)|mouselicked;	
 			while(TI==0){} TI=0; SBUF=songdifficulty; EX1=1; EX0=1;}
 ///////////////////////	parameter_index=0;
