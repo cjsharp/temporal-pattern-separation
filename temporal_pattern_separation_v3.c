@@ -74,25 +74,25 @@ void timer0(void) interrupt 1 {
 			if (driptimecounter==drip_delay_time){rightlight=0; rightvalve=1;}
 			else if (driptimecounter==right_valve_open_time+drip_delay_time){
 				rightdripflag=0; driptimecounter=0; rightlight=1; rightvalve=0;}}}
-//	else{
-//		if (leftdripflag==1){driptimecounter++; leftvalve=1; leftlight=0;
-//			if (driptimecounter==left_valve_open_time){
-//				dripinterrupt=0; leftdripflag=0; driptimecounter=0; leftlight=1; leftvalve=0;}}
-//		if (rightdripflag==1){driptimecounter++; rightvalve=1; rightlight=0;
-//			if (driptimecounter==right_valve_open_time){
-//				dripinterrupt=0; rightdripflag=0; driptimecounter=0; rightlight=1; rightvalve=0;}}}
+	else{
+		if (leftdripflag==1){driptimecounter++; leftvalve=1; leftlight=0;
+			if (driptimecounter==left_valve_open_time){
+				dripinterrupt=0; leftdripflag=0; driptimecounter=0; leftlight=1; leftvalve=0;}}
+		if (rightdripflag==1){driptimecounter++; rightvalve=1; rightlight=0;
+			if (driptimecounter==right_valve_open_time){
+				dripinterrupt=0; rightdripflag=0; driptimecounter=0; rightlight=1; rightvalve=0;}}}
 	if (phase==1 & phasecounter==lickwindow_duration){phasecounter=0; correct=0; phase=2; mouselicked=0;}				
 	if (phase==2){			  //delay phase
 		if (correct==2 & phasecounter==delay_duration){phase=0; phasecounter=0;}
 		else if (phasecounter==punishment_duration+delay_duration){phase=0; phasecounter=0;}}		 //phasecounter resets every phase change}
 	if (phase==0){
 		if (phasecounter == 1){tonechange=1; WAKE_CLKO=0x04;}
-//		else if (phasecounter == tone_duration){k++; tonechange=1; WAKE_CLKO=0;}  
-//		else if (phasecounter == tone_duration+time_between_tones){WAKE_CLKO=0x04;}
-//	    else if (phasecounter == 2*tone_duration+time_between_tones){k++; tonechange=1; WAKE_CLKO=0;}
-//		else if (phasecounter == 2*tone_duration+2*time_between_tones){WAKE_CLKO=0x04;}
-//	    else if (phasecounter == 3*tone_duration+2*time_between_tones){k++; tonechange=1; WAKE_CLKO=0;}
-//	   	else if (phasecounter == 3*tone_duration+3*time_between_tones){WAKE_CLKO=0x04;}
+		else if (phasecounter == tone_duration){k++; tonechange=1; WAKE_CLKO=0;}  
+		else if (phasecounter == tone_duration+time_between_tones){WAKE_CLKO=0x04;}
+	    else if (phasecounter == 2*tone_duration+time_between_tones){k++; tonechange=1; WAKE_CLKO=0;}
+		else if (phasecounter == 2*tone_duration+2*time_between_tones){WAKE_CLKO=0x04;}
+	    else if (phasecounter == 3*tone_duration+2*time_between_tones){k++; tonechange=1; WAKE_CLKO=0;}
+	   	else if (phasecounter == 3*tone_duration+3*time_between_tones){WAKE_CLKO=0x04;}
 		else if (phasecounter == 4*tone_duration+3*time_between_tones-1){
 		senddata=1;}
 		else if (phasecounter == 4*tone_duration+3*time_between_tones){phasecounter=0; WAKE_CLKO=0; k=0; //turn off tone; reset tone index; reset phasecounter 
@@ -205,7 +205,8 @@ void main(){
 					switch (sequence[k]) {	//and sets BRT to the value such that it produces the appropriate frequency
 						case 0: BRT = a; break; case 1: BRT = b; break; case 2: BRT = c; break;
 						case 3: BRT = d; break; case 4: BRT = e; break; case 5: BRT = f; break;
-						case 6: BRT = g; break;}}}			//phase 1 starts by printing out tone sequence 
+						case 6: BRT = g; break;}}
+}			//phase 1 starts by printing out tone sequence 
 			while(phase==1){}		//stops code until mouse licks or runs out of time
 			EX1=0; EX0=0; while(TI==0){} TI=0; SBUF=0x74;
 			while(TI==0){} TI=0; SBUF=(correct<<4)|mouselicked;	
