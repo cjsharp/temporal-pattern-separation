@@ -197,10 +197,10 @@ void main(){
 			while(TI==0){} TI=0; SBUF=(unsigned char)j2;
 			while(TI==0){} TI=0; SBUF=(unsigned char)j1; EX1=1; EX0=1;																	
 			while(phase==0){				//song starts here
-				if (senddata==1){senddata=0; EX1=1; EX0=1;
+				if (senddata==1){senddata=0; EX1=0; EX0=0;
 					while(TI==0){} TI=0; SBUF=0x72;
 					while(TI==0){} TI=0; SBUF=(sequence[0]<<4)|sequence[1];
-					while(TI==0){} TI=0; SBUF=(sequence[2]<<4)|sequence[3]; EX1=0; EX0=0;}				
+					while(TI==0){} TI=0; SBUF=(sequence[2]<<4)|sequence[3]; EX1=1; EX0=1;}				
 				if (tonechange){tonechange=0;					
 					switch (sequence[k]) {	//and sets BRT to the value such that it produces the appropriate frequency
 						case 0: BRT = a; break; case 1: BRT = b; break; case 2: BRT = c; break;
