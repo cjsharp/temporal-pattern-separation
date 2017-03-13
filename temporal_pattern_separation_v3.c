@@ -95,39 +95,38 @@ void timer0(void) interrupt 1 {
 				if(target==1){rightlight=0; rightvalve=1;} else {leftlight=0; leftvalve=1;}}
 			else if (target==1 & phasecounter==right_valve_open_time+drip_delay_time+1){rightlight=1; rightvalve=0;} 
 			else if (target==0 & phasecounter==left_valve_open_time+drip_delay_time+1){leftlight=1; leftvalve=0;}}
-		if(phasecounter==lickwindow_duration){phasecounter=0; phase=2; SendData(0x74,(correct<<4)|mouselicked,songdifficulty);
+		if(phasecounter==lickwindow_duration){phasecounter=0; phase=2;
 			if (training_phase==1 & training==1){mouselicked=0; correct=0; training=0;}
 			if (training_phase!=1){mouselicked=0; correct=0;}}}
 	if (phase==2){			  //delay phase
+		if (phasecounter==1){SendData(0x74,(correct<<4)|mouselicked,songdifficulty);}
 		if (correct==2 & phasecounter==delay_duration){phase=0; phasecounter=0;}
 		else if (phasecounter==punishment_duration+delay_duration){phase=0; phasecounter=0;}}		 //phasecounter resets every phase change}
 	if (phase==0){
 		if (phasecounter==1){BRT=Tone2Freq(song[k]); WAKE_CLKO=0x04;}
 		else if (phasecounter == tone_duration){k++; BRT=Tone2Freq(song[k]); WAKE_CLKO=0;}  
 		else if (phasecounter == tone_duration+time_between_tones){WAKE_CLKO=0x04;}
-	  else if (phasecounter == 2*tone_duration+time_between_tones){k++; BRT=Tone2Freq(song[k]); WAKE_CLKO=0;}
+		else if (phasecounter == 2*tone_duration+time_between_tones){k++; BRT=Tone2Freq(song[k]); WAKE_CLKO=0;}
 		else if (phasecounter == 2*tone_duration+2*time_between_tones){WAKE_CLKO=0x04;}
-	 	else if (phasecounter == 3*tone_duration+2*time_between_tones){k++; BRT=Tone2Freq(song[k]); WAKE_CLKO=0;}
+		else if (phasecounter == 3*tone_duration+2*time_between_tones){k++; BRT=Tone2Freq(song[k]); WAKE_CLKO=0;}
 		else if (phasecounter == 3*tone_duration+3*time_between_tones){WAKE_CLKO=0x04;}
 		else if (phasecounter==4*tone_duration+3*time_between_tones){
-			SendData(0x72,(song[0]<<4)|song[1],(song[2]<<4)|song[3]); 
-			phase=1; training=1; phasecounter=0; WAKE_CLKO=0; k=0;}}}
+			WAKE_CLKO=0; SendData(0x72,(song[0]<<4)|song[1],(song[2]<<4)|song[3]); 
+			phase=1; training=1; phasecounter=0; k=0;}}}
 
 void exint0() interrupt 0 {	   //left lick interrupt (location at 0003H)
 	while(TI==0){}TI=0; SBUF=0xFF; 
-	if (phase==1 & training==1){mouselicked=(unsigned char)0x01; training=0;
-		if (training_phase!=1){phase=2;phasecounter=0;}
-		if (target){correct=(unsigned char)1;}//if mouse was supposed to lick right lead, it is incorrect, so correct =1
-		else {correct=(unsigned char)2; if (training_phase!=1){leftdripflag=1;}}}
-			SendData(0x74,(correct<<4)|mouselicked,songdifficulty);}//if mouse was supposed to lick left lead, it lick correctly, correct = 2
+	if (phase==1 & training==1){mouselicked=0x01; training=0;
+		if (training_phase!=1){phase=2; mouselicked=0x01; phasecounter=0;}
+		if (target){correct=0x01;}//if mouse was supposed to lick right lead, it is incorrect, so correct =1
+		else {correct=0x02; if (training_phase!=1){leftdripflag=1;}}}}//if mouse was supposed to lick left lead, it lick correctly, correct = 2
 
 void exint1() interrupt 2 {	   //right lick interrupt (location at 0013H)
 	while(TI==0){}TI=0; SBUF=0xFE;   	
-	if (phase==1 & training==1) {mouselicked=(unsigned char)0x02; training=0;
+	if (phase==1 & training==1) {mouselicked=0x02; training=0;
 		if (training_phase!=1){phase=2;phasecounter=0;}
-		if (target){correct=(unsigned char)2; if (training_phase!=1){rightdripflag=1;}}//if mouse was supposed to lick right lead, it is incorrect, so correct=2
-		else {correct=(unsigned char)1;}}
-			SendData(0x74,(correct<<4)|mouselicked,songdifficulty);}//if mouse was supposed to lick left lead, it lick correctly, correct = 1
+		if (target){correct=0x02; if (training_phase!=1){rightdripflag=1;}}//if mouse was supposed to lick right lead, it is incorrect, so correct=2
+		else {correct=0x01;}}}//if mouse was supposed to lick left lead, it lick correctly, correct = 1
 
 void Uart_Isr() interrupt 4 {
     if (RI){RI=0; info=SBUF; SBUF=info;}
@@ -144,7 +143,7 @@ void main(){
 	unsigned char targetdifficulty[4]={0,4,2,6};
 	unsigned char tonedifficulty=0;
 	unsigned char i=0;
-	unsigned int j1=0; 			//j1 is the index used to indicate which song is being played 		
+	unsigned int j=0; 			//j is the index used to indicate which song is being played 		
 	bit correctflag=0;
 	SCON=0x5a;         //8 bit data, no parity bit
 	TMOD=0x21; 	       //8-bit auto reload timer 1 and 16 bit timer 0
@@ -183,7 +182,7 @@ void main(){
 		srand(TL0);
 		while(1){	
 			if (training_phase==1 | (training_phase==2 & correct==2)){correctflag=1;}
-			if (correctflag==1 & j1%3==0){correctflag=0; target=!target;}
+			if (correctflag==1 & j%3==0){correctflag=0; target=!target;}
 			if ((training_phase==3 & correct==2) || training_phase==4){target=rand()%2;}		//song composed in phase 3
 			songdifficulty=0;
 			if (target==1){song[0]=targetsong[0]; song[1]=targetsong[1]; song[2]=targetsong[2]; song[3]=targetsong[3];} 	
@@ -196,7 +195,7 @@ void main(){
 				songdifficulty=songdifficulty+abs(tonedifficulty-targetdifficulty[i]);}}
 				while(songdifficulty<=min_difficulty && songdifficulty>=max_difficulty);}		
 			while(phase==2){}				//catches code until delay ends				
-			EX1=0; EX0=0;
+			TR0=0; EX1=0; EX0=0;
 //			while(pause==1){
 //				if (parameter_index<10){info_received_flag=1; 
 //					while(TI==0){}TI=0; SBUF=0x55}
@@ -212,9 +211,9 @@ void main(){
 //				drip_delay_time=parameters[9];		//only applies to trainingphase 1
 //				training_phase=parameters[10];
 //				if (info_received_flag==1) {info_received_flag=0; break;}} 
-			EX1=1; EX0=1;
-			j1++; SendData(0x71,(j1>>8)&0xff,j1);
-			if(j1==trial_number){pause=1; parameter_index=0; j1=0;}																	
+			EX1=1; EX0=1; TR0=1;
+			j++; SendData(0x71,(j>>8)&0xff,j);
+			if(j==trial_number){pause=1; parameter_index=0; j=0;}																	
 			while(phase==0){}			
 			while(phase==1){}		
 			}
